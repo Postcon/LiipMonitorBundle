@@ -11,6 +11,14 @@ class RunnerManager
     private $container;
 
     /**
+     * @param ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    /**
      * @param string $group
      *
      * @return null|Runner
