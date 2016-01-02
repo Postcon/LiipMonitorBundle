@@ -2,6 +2,7 @@
 
 namespace Liip\MonitorBundle\Command;
 
+use Liip\MonitorBundle\Helper\RunnerManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -49,19 +50,15 @@ class HealthCheckCommand extends ContainerAwareCommand
         $checkName = $input->getArgument('checkName');
         $group = $input->getOption('group');
 
-        if (is_null($group)) {
-            $group = $this->getContainer()->getParameter('liip_monitor.default_group');
-        }
+        /** @var RunnerManager $runnerManager */
+        $runnerManager = $this->getContainer()->get('liip_monitor.helper.runner_manager');
+        $runner = $runnerManager->getRunner($group);
 
-        $runnerServiceId = 'liip_monitor.runner_'.$group;
-
-        if (!$this->getContainer()->has($runnerServiceId)) {
+        if (null === $runner) {
             $output->writeln('<error>No such group.</error>');
 
             return 1;
         }
-
-        $runner = $this->getContainer()->get('liip_monitor.runner_'.$group);
 
         if ($input->getOption('nagios')) {
             $reporter = $this->getContainer()->get('liip_monitor.helper.raw_console_reporter');

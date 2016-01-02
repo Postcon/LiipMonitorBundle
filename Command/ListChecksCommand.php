@@ -2,6 +2,8 @@
 
 namespace Liip\MonitorBundle\Command;
 
+use Liip\MonitorBundle\Helper\RunnerManager;
+use Liip\MonitorBundle\Runner;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,6 +11,9 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 
 class ListChecksCommand extends ContainerAwareCommand
 {
+    /** @var RunnerManager */
+    private $runnerManager;
+
     protected function configure()
     {
         $this
@@ -23,6 +28,8 @@ class ListChecksCommand extends ContainerAwareCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->runnerManager = $this->getContainer()->get('liip_monitor.helper.runner_manager');
+
         switch (true) {
             case $input->getOption('reporters'):
                 $this->listReporters($output);
@@ -43,19 +50,15 @@ class ListChecksCommand extends ContainerAwareCommand
     {
         $group = $input->getOption('group');
 
-        if (is_null($group)) {
-            $group = $this->getContainer()->getParameter('liip_monitor.default_group');
-        }
+        $runner = $this->runnerManager->getRunner($group);
 
-        $runnerServiceId = 'liip_monitor.runner_'.$group;
-
-        if (!$this->getContainer()->has($runnerServiceId)) {
+        if (null === $runner) {
             $output->writeln('<error>No such group.</error>');
 
             return;
         }
 
-        $this->doListChecks($output, $runnerServiceId);
+        $this->doListChecks($output, $runner);
     }
 
     /**
@@ -63,10 +66,10 @@ class ListChecksCommand extends ContainerAwareCommand
      */
     protected function listAllChecks(OutputInterface $output)
     {
-        foreach ($this->getGroups() as $runnerServiceId => $group) {
+        foreach ($this->runnerManager->getRunners() as $group => $runner) {
             $output->writeln(sprintf('<fg=yellow;options=bold>%s</>', $group));
 
-            $this->doListChecks($output, $runnerServiceId);
+            $this->doListChecks($output, $runner);
         }
     }
 
@@ -90,18 +93,17 @@ class ListChecksCommand extends ContainerAwareCommand
      */
     protected function listGroups(OutputInterface $output)
     {
-        foreach ($this->getGroups() as $group) {
+        foreach ($this->runnerManager->getGroups() as $group) {
             $output->writeln($group);
         }
     }
 
     /**
      * @param OutputInterface $output
-     * @param $runnerServiceId
+     * @param Runner          $runner
      */
-    private function doListChecks(OutputInterface $output, $runnerServiceId)
+    private function doListChecks(OutputInterface $output, Runner $runner)
     {
-        $runner = $this->getContainer()->get($runnerServiceId);
         $checks = $runner->getChecks();
 
         if (0 === count($checks)) {
@@ -111,23 +113,5 @@ class ListChecksCommand extends ContainerAwareCommand
         foreach ($runner->getChecks() as $alias => $check) {
             $output->writeln(sprintf('<info>%s</info> %s', $alias, $check->getLabel()));
         }
-    }
-
-    /**
-     * @return array key/value $serviceId/$group
-     */
-    private function getGroups()
-    {
-        $runnerServiceIds = $this->getContainer()->getParameter('liip_monitor.runners');
-
-        $groups = array();
-
-        foreach ($runnerServiceIds as $serviceId) {
-            if (preg_match('/liip_monitor.runner_(.+)/', $serviceId, $matches)) {
-                $groups[$serviceId] = $matches[1];
-            }
-        }
-
-        return $groups;
     }
 }

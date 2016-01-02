@@ -3,7 +3,7 @@
 namespace Liip\MonitorBundle\Controller;
 
 use Liip\MonitorBundle\Helper\ArrayReporter;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Liip\MonitorBundle\Helper\RunnerManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,19 +12,18 @@ use Liip\MonitorBundle\Helper\PathHelper;
 
 class HealthCheckController
 {
-    protected $container;
-    protected $runner;
+    protected $runnerManager;
     protected $pathHelper;
     protected $template;
 
     /**
-     * @param ContainerInterface $container
-     * @param PathHelper         $pathHelper
-     * @param                    $template
+     * @param RunnerManager $runnerManager
+     * @param PathHelper    $pathHelper
+     * @param               $template
      */
-    public function __construct(ContainerInterface $container, PathHelper $pathHelper, $template)
+    public function __construct(RunnerManager $runnerManager, PathHelper $pathHelper, $template)
     {
-        $this->container = $container;
+        $this->runnerManager = $runnerManager;
         $this->pathHelper = $pathHelper;
         $this->template = $template;
     }
@@ -85,12 +84,8 @@ class HealthCheckController
     public function listAllAction()
     {
         $allChecks = array();
-        $runners = $this->container->getParameter('liip_monitor.runners');
 
-        foreach ($runners as $runnerServiceId) {
-            $runner = $this->container->get($runnerServiceId);
-            $group = str_replace('liip_monitor.runner_', '', $runnerServiceId);
-
+        foreach ($this->runnerManager->getRunners() as $group => $runner) {
             foreach ($runner->getChecks() as $alias => $check) {
                 $allChecks[$group][] = $alias;
             }
@@ -104,13 +99,7 @@ class HealthCheckController
      */
     public function listGroupsAction()
     {
-        $groups = array();
-        $runners = $this->container->getParameter('liip_monitor.runners');
-
-        foreach ($runners as $runnerServiceId) {
-            $group = str_replace('liip_monitor.runner_', '', $runnerServiceId);
-            $groups[] = $group;
-        }
+        $groups = $this->runnerManager->getGroups();
 
         return new JsonResponse($groups);
     }
@@ -210,10 +199,10 @@ class HealthCheckController
     {
         $group = $this->getGroup($request);
 
-        $runnerServiceId = 'liip_monitor.runner_'.$group;
+        $runner = $this->runnerManager->getRunner($group);
 
-        if ($this->container->has($runnerServiceId)) {
-            return $this->container->get($runnerServiceId);
+        if ($runner) {
+            return $runner;
         }
 
         throw new \RuntimeException(sprintf('Unknown check group "%s"', $group));
@@ -226,12 +215,6 @@ class HealthCheckController
      */
     private function getGroup(Request $request)
     {
-        $group = $request->query->get('group');
-
-        if (!$group) {
-            $group = $this->container->getParameter('liip_monitor.default_group');
-        }
-
-        return $group;
+        return $request->query->get('group') ?: $this->runnerManager->getDefaultGroup();
     }
 }
