@@ -55,9 +55,10 @@ class AddGroupsCompilerPass implements CompilerPassInterface
 
     /**
      * This Method completes the service definitions of each check for a configured group.
+     *
      * For every configured check (per group) a parameter has been generated in LiipMonitorExtension::setParameters.
      * So the finally generated parameters have to be injected into each check service definition.
-     * (see the preg_match part)
+     * (see the preg_match part).
      *
      * @param ContainerBuilder $container
      * @param array            $checks
