@@ -75,7 +75,7 @@ $ curl -XPOST -H "Accept: application/json" <?php echo $request->getUriForPath($
 
         <dt><a href="<?php echo $request->getUriForPath($request->getPathInfo().'all_checks') ?>"><?php echo $request->getPathInfo().'all_checks' ?></a></dt>
         <dd>
-            Returns a list of available groups abd health checks as a JSON object.
+            Returns a list of available groups and health checks as a JSON object.
             <pre>
 $ curl -XPOST -H "Accept: application/json" <?php echo $request->getUriForPath($request->getPathInfo().'all_checks') ?>
 
