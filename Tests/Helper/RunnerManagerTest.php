@@ -21,7 +21,7 @@ class RunnerManagerTest extends \PHPUnit_Framework_TestCase
         return array(
             array(null),
             array('default'),
-            array('test')
+            array('test'),
         );
     }
 
@@ -41,7 +41,7 @@ class RunnerManagerTest extends \PHPUnit_Framework_TestCase
         $this->container
             ->expects($this->any())
             ->method('has')
-            ->with('liip_monitor.runner_'.($group?:'default'))
+            ->with('liip_monitor.runner_'.($group ?: 'default'))
             ->willReturn(true);
 
         $expectedResult = $this->getMock('Liip\MonitorBundle\Runner');
@@ -49,7 +49,7 @@ class RunnerManagerTest extends \PHPUnit_Framework_TestCase
         $this->container
             ->expects($this->any())
             ->method('get')
-            ->with('liip_monitor.runner_'.($group?:'default'))
+            ->with('liip_monitor.runner_'.($group ?: 'default'))
             ->willReturn($expectedResult);
 
         $result = $this->runnerManager->getRunner($group);
