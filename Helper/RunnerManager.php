@@ -19,7 +19,7 @@ class RunnerManager
     }
 
     /**
-     * @param string $group
+     * @param null|string $group
      *
      * @return null|Runner
      */
@@ -75,7 +75,7 @@ class RunnerManager
     }
 
     /**
-     * @param string $group
+     * @param null|string $group
      *
      * @return null|string
      */
